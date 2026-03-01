@@ -26,27 +26,43 @@
         </nav>
     </header>
     <div class="profile-main-container">
-        <img src="images/profile.jpg" alt="Profile Photo" class="profile-photo">
-        <h1>Siqi Lai</h1>
-        <h4>Ph.D. Student @ HKUST(GZ)</h4>
+        <div class="profile-photo-wrapper">
+            <img src="images/profile.jpg" alt="Profile Photo" class="profile-photo">
+            <div class="photo-ring"></div>
+        </div>
+        <h1 class="main-title">Siqi Lai</h1>
+        <h4 class="subtitle">Ph.D. Student @ HKUST(GZ)</h4>
         <div class="social-links">
-            <a href="https://scholar.google.com/citations?hl=en&user=K4YI7ksAAAAJ" target="_blank" id="gs">
+            <a href="https://scholar.google.com/citations?hl=en&user=K4YI7ksAAAAJ" target="_blank" id="gs" aria-label="Google Scholar">
                 <img src="images/google_scholar.svg" alt="Google Scholar" class="social-icon">
             </a>
-            <a href="https://github.com/SQLai2099" target="_blank" id="gh">
+            <a href="https://github.com/SQLai2099" target="_blank" id="gh" aria-label="GitHub">
                 <img src="images/github.svg" alt="Github" class="social-icon">
             </a>
         </div>
         <main>
             <section>
                 <h2>Welcome to My Personal Website</h2>
-                <p>Hello! I am Siqi Lai, a Ph.D. student at HKUST (GZ). My research interests include Data Science and Intelligent Transportation. Feel free to explore my website to learn more about my work and achievements.</p>
+                <p class="welcome-text">Hello! I am Siqi Lai, a Ph.D. student at HKUST (GZ). My research interests include <span class="highlight">Data Science</span>, <span class="highlight">Intelligent Transportation</span>, and <span class="highlight">LLM Agents</span>. Feel free to explore my website to learn more about my work and achievements.</p>
             </section>
         </main>
     </div>
     <footer>
         <p>&copy; 2024 Siqi Lai. All rights reserved.</p>
     </footer>
+    
+    <!-- Background Music -->
+    <audio id="bgMusic" loop>
+        <source src="src/折戸伸治 - Adventure for Black.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Music Control Button -->
+    <button id="musicToggle" class="music-control playing" aria-label="Toggle background music">
+        <span class="music-icon">🎵</span>
+        <span class="music-status">Playing</span>
+    </button>
+    
     <script src="js/scripts.js"></script>
 </body>
 </html>
