@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <audio id="bgMusic" loop>
+        <source src="src/折戸伸治 - Adventure for Black.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <script>
+        (function() {
+            const bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.3;
+            
+            // Listen for messages from parent pages
+            window.addEventListener('message', function(event) {
+                // Only accept messages from same origin
+                if (event.origin !== window.location.origin) return;
+                
+                const { type, currentTime, volume } = event.data;
+                
+                switch(type) {
+                    case 'play':
+                        bgMusic.play().catch(e => console.log('Play failed:', e));
+                        break;
+                    case 'pause':
+                        bgMusic.pause();
+                        break;
+                    case 'setTime':
+                        if (typeof currentTime === 'number') {
+                            bgMusic.currentTime = currentTime;
+                        }
+                        break;
+                    case 'setVolume':
+                        if (typeof volume === 'number') {
+                            bgMusic.volume = Math.max(0, Math.min(1, volume));
+                        }
+                        break;
+                    case 'getState':
+                        // Send current state back to parent
+                        event.source.postMessage({
+                            type: 'state',
+                            paused: bgMusic.paused,
+                            currentTime: bgMusic.currentTime,
+                            duration: bgMusic.duration,
+                            volume: bgMusic.volume
+                        }, event.origin);
+                        break;
+                }
+            });
+            
+            // Send time updates to parent
+            let lastUpdateTime = 0;
+            bgMusic.addEventListener('timeupdate', function() {
+                const now = Date.now();
+                // Throttle updates to once per 100ms
+                if (now - lastUpdateTime > 100) {
+                    if (window.parent && !bgMusic.paused) {
+                        window.parent.postMessage({
+                            type: 'timeupdate',
+                            currentTime: bgMusic.currentTime,
+                            duration: bgMusic.duration,
+                            timestamp: now
+                        }, window.location.origin);
+                    }
+                    lastUpdateTime = now;
+                }
+            });
+            
+            // Auto-play on load if music was playing before
+            const savedState = sessionStorage.getItem('musicState');
+            const savedTime = sessionStorage.getItem('musicTime');
+            const savedTimestamp = sessionStorage.getItem('musicTimestamp');
+            
+            bgMusic.addEventListener('canplay', function() {
+                if (savedState === 'playing' && savedTime && savedTimestamp) {
+                    const timeDiff = (Date.now() - parseInt(savedTimestamp, 10)) / 1000;
+                    let newTime = parseFloat(savedTime, 10) + timeDiff;
+                    const duration = bgMusic.duration;
+                    if (isFinite(duration) && duration > 0) {
+                        newTime = newTime % duration;
+                    }
+                    bgMusic.currentTime = Math.max(0, newTime);
+                    bgMusic.play().catch(e => console.log('Autoplay failed:', e));
+                } else {
+                    const wasPlaying = localStorage.getItem('musicPlaying') === 'true';
+                    if (wasPlaying) {
+                        bgMusic.play().catch(e => console.log('Autoplay failed:', e));
+                    }
+                }
+            }, { once: true });
+            
+            // Save state periodically
+            setInterval(function() {
+                if (!bgMusic.paused) {
+                    sessionStorage.setItem('musicState', 'playing');
+                    sessionStorage.setItem('musicTime', bgMusic.currentTime.toString());
+                    sessionStorage.setItem('musicTimestamp', Date.now().toString());
+                }
+            }, 500);
+            
+            // Save on pause
+            bgMusic.addEventListener('pause', function() {
+                sessionStorage.setItem('musicState', 'paused');
+                sessionStorage.setItem('musicTime', bgMusic.currentTime.toString());
+                sessionStorage.setItem('musicTimestamp', Date.now().toString());
+            });
+        })();
+    </script>
+</body>
+</html>

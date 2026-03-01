@@ -168,15 +168,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Background Music Control with Cross-Page Continuity
-    if (bgMusic && musicToggle && musicStatus) {
-        // Set initial volume (30% for background music)
-        bgMusic.volume = 0.3;
-        
-        // Create BroadcastChannel for cross-page communication
-        const musicChannel = new BroadcastChannel('background-music');
+    // Background Music Control with Seamless Cross-Page Continuity using iframe
+    if (musicToggle && musicStatus) {
+        let musicIframe = null;
+        let musicState = { paused: true, currentTime: 0 };
         let hasUserInteracted = false;
-        let isInitialized = false;
         
         // Function to update UI
         function updateMusicUI(playing) {
@@ -189,199 +185,168 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Function to start playing music
-        function startMusic() {
-            if (bgMusic.paused) {
-                bgMusic.play().then(() => {
-                    updateMusicUI(true);
-                    localStorage.setItem('musicPlaying', 'true');
-                    // Broadcast to other pages
-                    musicChannel.postMessage({
-                        type: 'play',
-                        currentTime: bgMusic.currentTime,
-                        timestamp: Date.now()
-                    });
-                }).catch(error => {
-                    console.log('Audio play failed:', error);
-                });
+        // Create or get music player iframe
+        function getMusicIframe() {
+            if (musicIframe && musicIframe.contentWindow) {
+                return musicIframe;
             }
-        }
-        
-        // Function to pause music
-        function pauseMusic() {
-            if (!bgMusic.paused) {
-                bgMusic.pause();
-                updateMusicUI(false);
-                localStorage.setItem('musicPlaying', 'false');
-                // Broadcast to other pages
-                musicChannel.postMessage({
-                    type: 'pause',
-                    currentTime: bgMusic.currentTime,
-                    timestamp: Date.now()
-                });
-            }
-        }
-        
-        // Function to sync with other pages
-        function syncWithOtherPages() {
-            const savedState = sessionStorage.getItem('musicState');
-            const savedTime = sessionStorage.getItem('musicTime');
-            const savedTimestamp = sessionStorage.getItem('musicTimestamp');
             
-            if (savedState === 'playing' && savedTime && savedTimestamp) {
-                const timeDiff = (Date.now() - parseInt(savedTimestamp)) / 1000;
-                const newTime = parseFloat(savedTime) + timeDiff;
+            // Check if iframe already exists in document
+            let existingIframe = document.getElementById('musicPlayerIframe');
+            if (existingIframe) {
+                musicIframe = existingIframe;
+                return musicIframe;
+            }
+            
+            // Create new iframe
+            musicIframe = document.createElement('iframe');
+            musicIframe.id = 'musicPlayerIframe';
+            musicIframe.src = 'music-player.html';
+            musicIframe.style.position = 'fixed';
+            musicIframe.style.top = '-9999px';
+            musicIframe.style.left = '-9999px';
+            musicIframe.style.width = '1px';
+            musicIframe.style.height = '1px';
+            musicIframe.style.border = 'none';
+            musicIframe.style.opacity = '0';
+            musicIframe.style.pointerEvents = 'none';
+            document.body.appendChild(musicIframe);
+            
+            return musicIframe;
+        }
+        
+        // Send command to iframe
+        function sendToIframe(type, data = {}) {
+            const iframe = getMusicIframe();
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type, ...data }, window.location.origin);
+            }
+        }
+        
+        // Listen for messages from iframe
+        window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin) return;
+            
+            const { type, paused, currentTime, duration, timestamp } = event.data;
+            
+            if (type === 'timeupdate') {
+                musicState.currentTime = currentTime;
+                musicState.paused = false;
+                if (!musicState.paused) {
+                    localStorage.setItem('musicTime', currentTime);
+                    sessionStorage.setItem('musicState', 'playing');
+                    sessionStorage.setItem('musicTime', currentTime);
+                    sessionStorage.setItem('musicTimestamp', timestamp.toString());
+                }
+            } else if (type === 'state') {
+                musicState.paused = paused;
+                musicState.currentTime = currentTime;
+                updateMusicUI(!paused);
+            }
+        });
+        
+        // Initialize music player
+        function initMusicPlayer() {
+            const iframe = getMusicIframe();
+            
+            // Wait for iframe to load
+            iframe.addEventListener('load', function() {
+                // Request current state
+                sendToIframe('getState');
                 
-                // Set the time and try to play
-                bgMusic.currentTime = newTime % bgMusic.duration;
-                startMusic();
-                return true;
-            }
-            return false;
+                // Try to restore and play
+                const savedState = sessionStorage.getItem('musicState');
+                const savedMusicState = localStorage.getItem('musicPlaying');
+                const wasPaused = savedMusicState === 'false';
+                
+                if (savedState === 'playing' || (!wasPaused && savedState !== 'paused')) {
+                    // Try to play
+                    setTimeout(() => {
+                        sendToIframe('play');
+                        updateMusicUI(true);
+                        localStorage.setItem('musicPlaying', 'true');
+                    }, 100);
+                } else {
+                    updateMusicUI(false);
+                }
+            }, { once: true });
         }
         
-        // Listen for messages from other pages
-        musicChannel.onmessage = function(event) {
-            const { type, currentTime, timestamp } = event.data;
-            
-            if (type === 'play') {
-                // Another page is playing, sync with it
-                const timeDiff = (Date.now() - timestamp) / 1000;
-                const newTime = (currentTime + timeDiff) % bgMusic.duration;
-                bgMusic.currentTime = newTime;
-                startMusic();
-            } else if (type === 'pause') {
-                // Another page paused, sync with it
-                pauseMusic();
-            } else if (type === 'timeupdate') {
-                // Sync time from another page
-                const timeDiff = (Date.now() - timestamp) / 1000;
-                const newTime = (currentTime + timeDiff) % bgMusic.duration;
-                if (Math.abs(bgMusic.currentTime - newTime) > 1) {
-                    bgMusic.currentTime = newTime;
+        // Start music
+        function startMusic() {
+            sendToIframe('play');
+            updateMusicUI(true);
+            localStorage.setItem('musicPlaying', 'true');
+        }
+        
+        // Pause music
+        function pauseMusic() {
+            sendToIframe('pause');
+            updateMusicUI(false);
+            localStorage.setItem('musicPlaying', 'false');
+            sessionStorage.setItem('musicState', 'paused');
+            sessionStorage.setItem('musicTime', musicState.currentTime.toString());
+            sessionStorage.setItem('musicTimestamp', Date.now().toString());
+        }
+        
+        // Initialize on page load
+        initMusicPlayer();
+        
+        // User interaction to unlock autoplay
+        const enableAutoplay = function() {
+            if (!hasUserInteracted) {
+                hasUserInteracted = true;
+                const savedMusicState = localStorage.getItem('musicPlaying');
+                if (savedMusicState !== 'false') {
+                    startMusic();
                 }
             }
         };
-        
-        // Try to sync with other pages first
-        const synced = syncWithOtherPages();
-        
-        // Load saved music state
-        const savedMusicState = localStorage.getItem('musicPlaying');
-        const savedMusicTime = localStorage.getItem('musicTime');
-        const wasPaused = savedMusicState === 'false';
-        
-        // Initialize music
-        if (!synced) {
-            if (savedMusicTime) {
-                bgMusic.currentTime = parseFloat(savedMusicTime);
-            }
-            
-            // Try to auto-play if not paused
-            if (!wasPaused) {
-                // Use user interaction to enable autoplay
-                const enableAutoplay = function() {
-                    if (!hasUserInteracted && !isInitialized) {
-                        hasUserInteracted = true;
-                        startMusic();
-                    }
-                };
-                
-                // Listen for any user interaction
-                const interactionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
-                interactionEvents.forEach(eventType => {
-                    document.addEventListener(eventType, enableAutoplay, { once: true });
-                });
-                
-                // Try immediate autoplay (may be blocked by browser)
-                bgMusic.play().then(() => {
-                    hasUserInteracted = true;
-                    updateMusicUI(true);
-                    localStorage.setItem('musicPlaying', 'true');
-                }).catch(() => {
-                    // Autoplay blocked, wait for user interaction
-                    updateMusicUI(false);
-                });
-                
-                isInitialized = true;
-            } else {
-                updateMusicUI(false);
-                isInitialized = true;
-            }
-        } else {
-            isInitialized = true;
-        }
+        ['click', 'touchstart', 'keydown', 'mousedown'].forEach(function(ev) {
+            document.addEventListener(ev, enableAutoplay, { once: true });
+        });
         
         // Music toggle functionality
         musicToggle.addEventListener('click', function() {
             hasUserInteracted = true;
-            if (bgMusic.paused) {
+            if (musicState.paused) {
                 startMusic();
             } else {
                 pauseMusic();
-            }
-        });
-        
-        // Save playback position periodically
-        bgMusic.addEventListener('timeupdate', function() {
-            if (!bgMusic.paused) {
-                const currentTime = bgMusic.currentTime;
-                localStorage.setItem('musicTime', currentTime);
-                sessionStorage.setItem('musicState', 'playing');
-                sessionStorage.setItem('musicTime', currentTime);
-                sessionStorage.setItem('musicTimestamp', Date.now().toString());
-                
-                // Broadcast time update to other pages
-                musicChannel.postMessage({
-                    type: 'timeupdate',
-                    currentTime: currentTime,
-                    timestamp: Date.now()
-                });
-            }
-        });
-        
-        // Handle pause
-        bgMusic.addEventListener('pause', function() {
-            sessionStorage.setItem('musicState', 'paused');
-            sessionStorage.setItem('musicTime', bgMusic.currentTime.toString());
-            sessionStorage.setItem('musicTimestamp', Date.now().toString());
-        });
-        
-        // Handle audio ended (shouldn't happen with loop)
-        bgMusic.addEventListener('ended', function() {
-            updateMusicUI(false);
-        });
-        
-        // Handle audio errors
-        bgMusic.addEventListener('error', function(e) {
-            console.error('Audio error:', e);
-            musicToggle.style.display = 'none';
-        });
-        
-        // Handle page visibility - pause when hidden, resume when visible
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                // Page is hidden, save state
-                if (!bgMusic.paused) {
-                    sessionStorage.setItem('musicState', 'playing');
-                    sessionStorage.setItem('musicTime', bgMusic.currentTime.toString());
-                    sessionStorage.setItem('musicTimestamp', Date.now().toString());
-                }
-            } else {
-                // Page is visible, try to sync
-                if (!wasPaused && hasUserInteracted) {
-                    syncWithOtherPages();
-                }
             }
         });
         
         // Save state before page unload
         window.addEventListener('beforeunload', function() {
-            if (!bgMusic.paused) {
+            if (!musicState.paused) {
                 sessionStorage.setItem('musicState', 'playing');
-                sessionStorage.setItem('musicTime', bgMusic.currentTime.toString());
+                sessionStorage.setItem('musicTime', musicState.currentTime.toString());
                 sessionStorage.setItem('musicTimestamp', Date.now().toString());
             }
         });
+        
+        // On internal link click, save state immediately
+        document.addEventListener('click', function(e) {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href') || '';
+            if (href.startsWith('#') || href.startsWith('javascript:')) return;
+            if (a.target === '_blank') return;
+            try {
+                const url = new URL(a.href);
+                if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                    if (!musicState.paused) {
+                        sessionStorage.setItem('musicState', 'playing');
+                        sessionStorage.setItem('musicTime', musicState.currentTime.toString());
+                        sessionStorage.setItem('musicTimestamp', Date.now().toString());
+                    }
+                }
+            } catch (err) {}
+        }, true);
+        
+        // Periodically sync state from iframe
+        setInterval(function() {
+            sendToIframe('getState');
+        }, 1000);
     }
 });
