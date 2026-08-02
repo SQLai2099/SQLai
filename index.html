@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siqi Lai - Personal Website</title>
+    <title>Siqi Lai | Urban Intelligence &amp; Urban Agents</title>
+    <meta name="description" content="Siqi Lai researches urban intelligence and data-driven urban agents, including LLM, VLM, and VLA agents for real-world city systems.">
     <link rel="stylesheet" href="css/styles.css">
     <!-- Use local Font Awesome CSS -->
     <link rel="stylesheet" href="css/all.min.css">
@@ -12,7 +13,7 @@
     <meta name="google-site-verification" content="OwpRrjIIOz6Z7UiNi_jX6CZFAuvwE6p1XdWA8dbjJog" />
 </head>
 
-<body>
+<body class="home-page">
     <div class="bg-image"></div>
     <header>
         <nav>
@@ -33,22 +34,75 @@
         <h1 class="main-title">Siqi Lai</h1>
         <h4 class="subtitle">Ph.D. Student @ HKUST(GZ)</h4>
         <div class="social-links">
-            <a href="https://scholar.google.com/citations?hl=en&user=K4YI7ksAAAAJ" target="_blank" id="gs" aria-label="Google Scholar">
+            <a href="https://scholar.google.com/citations?hl=en&amp;user=K4YI7ksAAAAJ" target="_blank" rel="noopener noreferrer" id="gs" aria-label="Google Scholar">
                 <img src="images/google_scholar.svg" alt="Google Scholar" class="social-icon">
             </a>
-            <a href="https://github.com/SQLai2099" target="_blank" id="gh" aria-label="GitHub">
+            <a href="https://github.com/SQLai2099" target="_blank" rel="noopener noreferrer" id="gh" aria-label="GitHub">
                 <img src="images/github.svg" alt="Github" class="social-icon">
             </a>
         </div>
-        <main>
-            <section>
-                <h2>Welcome to My Personal Website</h2>
-                <p class="welcome-text">Hello! I am Siqi Lai, a Ph.D. student at HKUST (GZ). My research interests include <span class="highlight">Data Science</span>, <span class="highlight">Intelligent Transportation</span>, and <span class="highlight">LLM Agents</span>. Feel free to explore my website to learn more about my work and achievements.</p>
+        <main class="home-main">
+            <section class="research-hero" aria-labelledby="research-title">
+                <p class="research-eyebrow">Urban Intelligence <span aria-hidden="true">/</span> Data-Driven Agents</p>
+                <h2 id="research-title">Building agents that understand, reason about, and act in cities.</h2>
+                <p class="research-lead">My research centers on <strong>urban intelligence</strong>: developing data-driven urban agents that learn from complex city data and turn it into reliable decisions for real-world urban systems.</p>
+
+                <div class="research-flow" aria-label="Research workflow from urban data to urban action">
+                    <div class="flow-stage">
+                        <span class="flow-index">01</span>
+                        <div>
+                            <span class="flow-label">Understand</span>
+                            <span class="flow-detail">multimodal urban context</span>
+                        </div>
+                    </div>
+                    <span class="flow-arrow" aria-hidden="true">→</span>
+                    <div class="flow-stage">
+                        <span class="flow-index">02</span>
+                        <div>
+                            <span class="flow-label">Reason</span>
+                            <span class="flow-detail">across space, time, and agents</span>
+                        </div>
+                    </div>
+                    <span class="flow-arrow" aria-hidden="true">→</span>
+                    <div class="flow-stage">
+                        <span class="flow-index">03</span>
+                        <div>
+                            <span class="flow-label">Act</span>
+                            <span class="flow-detail">within dynamic city systems</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="agent-grid">
+                    <article class="agent-card agent-card-llm">
+                        <span class="agent-code">LLM</span>
+                        <h3>Language Agents</h3>
+                        <p>Reason over spatiotemporal context, use urban knowledge, and coordinate decisions among multiple agents.</p>
+                    </article>
+                    <article class="agent-card agent-card-vlm">
+                        <span class="agent-code">VLM</span>
+                        <h3>Vision-Language Agents</h3>
+                        <p>Perceive urban scenes and ground visual observations in the semantics of places, events, and mobility.</p>
+                    </article>
+                    <article class="agent-card agent-card-vla">
+                        <span class="agent-code">VLA</span>
+                        <h3>Vision-Language-Action Agents</h3>
+                        <p>Connect multimodal perception and language reasoning with actions in embodied urban environments.</p>
+                    </article>
+                </div>
+
+                <div class="research-outlook">
+                    <p>I aim to build <strong>generalizable, collaborative, and trustworthy</strong> agents for traffic control, mobility, navigation, and broader urban decision-making.</p>
+                    <div class="research-links">
+                        <a class="primary-link" href="publications.html">Explore my research <span aria-hidden="true">↗</span></a>
+                        <a class="secondary-link" href="about.html">More about me</a>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
     <footer>
-        <p>&copy; 2024 Siqi Lai. All rights reserved.</p>
+        <p>&copy; 2026 Siqi Lai. All rights reserved.</p>
     </footer>
     
     <!-- Music Control Button -->
